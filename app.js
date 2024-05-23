@@ -10,11 +10,15 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, "public")));
 
-const web3 = new Web3(Web3.givenProvider);
+let allowCrossDomain = function(req, res, next) {
+  res.header('Access-Control-Allow-Origin', "*");
+  res.header('Access-Control-Allow-Headers', "*");
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
+  next();
+}
+app.use(allowCrossDomain);
 
-app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "index.html"));
-});
+const web3 = new Web3(Web3.givenProvider);
 
 app.post("/nonce", async (req, res) => {
   const { address } = req.body;
@@ -24,7 +28,7 @@ app.post("/nonce", async (req, res) => {
   res.status(200).json({ nonce });
 });
 
-app.post("/login", async (req, res) => {
+app.post("/authorization", async (req, res) => {
   try {
     const { signature, nonce } = req.body;
 
@@ -35,6 +39,7 @@ app.post("/login", async (req, res) => {
     const recoveredAddress = signedMsg.toLowerCase();
 
     if (recoveredAddress === address.toLowerCase()) {
+      console.log("CARTEIRA AUTORIZADA -->",recoveredAddress)
       await clearNonce(nonce)
       res.status(200).send("Login validated");
     } else {
